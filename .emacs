@@ -1,84 +1,55 @@
+;; Macintosh/Aquamacs Specific Stuff
 (osx-key-mode -1)
 (setq
  ns-command-modifier 'meta
  ns-alternate-modifier nil
  ns-use-mac-modifier-symbols nil
  aquamacs-scratch-file nil
- initial-major-mode 'emacs-lisp-mode)
-
+ initial-major-mode 'emacs-lisp-mode
+ desktop-restore-eager 50)
 (one-buffer-one-frame-mode -1)
-
-(server-start)
-
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
-
-(desktop-save-mode t)
-
 (tabbar-mode -1)
+(cua-mode 0)
+(setq select-enable-clipboard t)
 
+;; General editing things
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+(desktop-save-mode t)
+(server-start)
 (global-auto-revert-mode 1)
+(tool-bar-mode 0)
 
+;; Initialize packages
 (require 'package)
-(add-to-list 'package-archives
-             '("melpa" . "http://melpa.org/packages/") t)
-(when (< emacs-major-version 24)
-  ;; For important compatibility libraries like cl-lib
-  (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/")))
 (package-initialize)
 
+;; Autocomplete
 (require 'auto-complete-config)
 (ac-config-default)
-(tool-bar-mode 0)
-(cua-mode nil)
-
-(add-hook 'after-init-hook #'global-flycheck-mode)
-(setq-default flycheck-disabled-checkers '(javascript-jshint))
-
 (setq ac-auto-show-menu nil
       ac-use-menu-map t)
-;; Default settings
 (define-key ac-menu-map "<up>" 'ac-next)
 (define-key ac-menu-map "<down>" 'ac-previous)
 
+(eval-after-load 'tern
+   '(progn
+      (require 'tern-auto-complete)
+      (tern-ac-setup)))
+
+;; Flycheck
+(add-hook 'after-init-hook #'global-flycheck-mode)
+(setq-default flycheck-disabled-checkers '(javascript-jshint))
+
+;; Custom global key bindings
 (autoload 'zap-up-to-char "misc"
     "Kill up to, but not including ARGth occurrence of CHAR.
 
   \(fn arg char)"
     'interactive)
-(global-set-key "\C-x\M-r" 'revert-buffer)
 (global-set-key "\M-Z" 'zap-up-to-char)
+(global-set-key "\C-x\M-r" 'revert-buffer)
 (global-set-key (kbd "M-S-SPC") 'just-one-space)
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(aquamacs-additional-fontsets nil t)
- '(aquamacs-autoface-mode nil)
- '(aquamacs-customization-version-id 307 t)
- '(aquamacs-tool-bar-user-customization nil t)
- '(default-frame-alist
-    (quote
-     ((tool-bar-lines . 0)
-      (menu-bar-lines . 1)
-      (foreground-color . "Black")
-      (background-color . "White")
-      (cursor-type . box)
-      (cursor-color . "Red")
-      (vertical-scroll-bars . right)
-      (internal-border-width . 0)
-      (left-fringe . 1)
-      (right-fringe)
-      (fringe))))
- '(flycheck-check-syntax-automatically (quote (save)))
- '(indent-tabs-mode nil)
- '(ns-alternate-modifier nil)
- '(ns-antialias-text nil)
- '(ns-tool-bar-display-mode (quote both) t)
- '(ns-tool-bar-size-mode (quote regular) t)
- '(uniquify-buffer-name-style (quote post-forward) nil (uniquify))
- '(visual-line-mode nil t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -98,7 +69,8 @@
 (projectile-global-mode)
 
 ;; Set up for React/JSX development
-(add-to-list 'auto-mode-alist '("\\.jsx$" . js2-jsx-mode))
+(add-to-list 'auto-mode-alist '("\\.jsx$" . rjsx-mode))
+(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 
 (with-eval-after-load 'js2-mode
   (defvar sgml-basic-offset)
@@ -109,6 +81,23 @@
   (setq js-indent-level 4)
   (setq sgml-basic-offset js-indent-level
         sgml-attribute-offset js-indent-level))
+
+(setq-default js2-global-externs '("test" "expect" "jest" "describe" "beforeEach" "afterEach" "setTimeout" "fetch" "Blob" "Response" "Request" "Headers"))
+
+(require 'string-inflection)
+
+(defun my-js2-mode-hook ()
+  (local-set-key (kbd "C-c C-l") 'string-inflection-java-style-cycle)
+  (tern-mode t)
+  )
+
+(add-hook 'js2-mode-hook 'my-js2-mode-hook)
+
+(defun my-json-mode-hook ()
+  (setq-local js-indent-level 2)
+  )
+
+(add-hook 'json-mode-hook 'my-json-mode-hook)
 
 (require 'nvm)
 (nvm-use (caar (last (nvm--installed-versions))))
@@ -133,13 +122,34 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 ;; you can select the key you prefer to
 (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
 
+(require 'magit)
 (global-set-key (kbd "C-x g") 'magit-status)
+(global-set-key (kbd "C-%") 'replace-string)
 
 (when (memq window-system '(mac ns))
   (exec-path-from-shell-initialize))
 
 (setq vc-handled-backends (delq 'Git vc-handled-backends))
 (remove-hook 'server-switch-hook 'magit-commit-diff)
+(add-hook 'after-save-hook 'magit-after-save-refresh-status)
 
 (require 'expand-region)
 (global-set-key (kbd "C-=") 'er/expand-region)
+
+(require 'rainbow-delimiters)
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+
+(require 'wrap-region)
+(add-hook 'prog-mode-hook 'wrap-region-mode)
+
+(wrap-region-add-wrappers
+ '(("`" "`" nil '(js2-mode js2-jsx-mode rjsx-mode markdown-mode))
+   ("/* " " */" "*" '(js2-mode js2-jsx-mode rjsx-mode))
+   ("/" "/" nil '(js2-mode javascript-mode js2-jsx-mode rjsx-mode))))
+
+(require 'js2-refactor)
+(add-hook 'js2-mode-hook #'js2-refactor-mode)
+(js2r-add-keybindings-with-prefix "C-c C-m")
+
+(provide '.emacs)
+;;; .emacs ends here
