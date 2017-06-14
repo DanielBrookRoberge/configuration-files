@@ -1,0 +1,16 @@
+[user]
+	email = dbrookroberge@mobify.com
+	name = Daniel Brook-Roberge
+[push]
+	default = simple
+[alias]
+	co = checkout
+	stat = status
+	d = diff
+        ca = commit -a
+        cam = commit -am
+        branchco = checkout -b
+[filter "lfs"]
+	clean = git-lfs clean %f
+	smudge = git-lfs smudge %f
+	required = true
