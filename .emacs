@@ -11,6 +11,7 @@
 (tabbar-mode -1)
 (cua-mode 0)
 (setq select-enable-clipboard t)
+(setq-default indent-tabs-mode nil)
 
 ;; General editing things
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
@@ -18,10 +19,19 @@
 (server-start)
 (global-auto-revert-mode 1)
 (tool-bar-mode 0)
+(global-unset-key (kbd "C-z"))
 
 ;; Initialize packages
 (require 'package)
 (package-initialize)
+(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+
+(setq sml/theme 'light-powerline)
+(sml/setup)
+
+(require 'guru-mode)
+(setq guru-warn-only t)
+(add-hook 'prog-mode-hook 'guru-mode)
 
 ;; Autocomplete
 (require 'auto-complete-config)
@@ -78,11 +88,11 @@
   (defvar js-indent-level)
   ;; (diminish 'js2-mode "JS")
   ;; (diminish 'js2-jsx-mode "JSX")
-  (setq js-indent-level 4)
+  (setq js-indent-level 2)
   (setq sgml-basic-offset js-indent-level
         sgml-attribute-offset js-indent-level))
 
-(setq-default js2-global-externs '("test" "expect" "jest" "describe" "beforeEach" "afterEach" "setTimeout" "fetch" "Blob" "Response" "Request" "Headers"))
+(setq-default js2-global-externs '("test" "expect" "jest" "describe" "beforeEach" "afterEach" "setTimeout" "fetch" "Blob" "Response" "Request" "Headers" "it"))
 
 (require 'string-inflection)
 
@@ -124,7 +134,13 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 
 (require 'magit)
 (global-set-key (kbd "C-x g") 'magit-status)
+
+(require 'magit-gh-pulls)
+(add-hook 'magit-mode-hook 'turn-on-magit-gh-pulls)
+
 (global-set-key (kbd "C-%") 'replace-string)
+(global-set-key (kbd "C-c w s") 'copy-as-format-slack)
+(global-set-key (kbd "C-c w g") 'copy-as-format-github)
 
 (when (memq window-system '(mac ns))
   (exec-path-from-shell-initialize))
@@ -150,6 +166,13 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (require 'js2-refactor)
 (add-hook 'js2-mode-hook #'js2-refactor-mode)
 (js2r-add-keybindings-with-prefix "C-c C-m")
+
+(require 'indium)
+(add-hook 'js-mode-hook #'indium-interaction-mode)
+
+(require 'org)
+(define-key global-map "\C-cl" 'org-store-link)
+(setq org-log-done t)
 
 (provide '.emacs)
 ;;; .emacs ends here
