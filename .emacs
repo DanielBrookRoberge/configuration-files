@@ -11,6 +11,8 @@
 (tabbar-mode -1)
 (cua-mode 0)
 (setq select-enable-clipboard t)
+(setq gc-cons-threshold 20000000)
+(setq confirm-kill-emacs 'y-or-n-p)
 (setq-default indent-tabs-mode nil)
 
 ;; General editing things
@@ -20,18 +22,16 @@
 (global-auto-revert-mode 1)
 (tool-bar-mode 0)
 (global-unset-key (kbd "C-z"))
+(show-paren-mode t)
 
 ;; Initialize packages
 (require 'package)
 (package-initialize)
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
 
+(setq sml/no-confirm-load-theme t)
 (setq sml/theme 'light-powerline)
 (sml/setup)
-
-(require 'guru-mode)
-(setq guru-warn-only t)
-(add-hook 'prog-mode-hook 'guru-mode)
 
 ;; Autocomplete
 (require 'auto-complete-config)
@@ -49,6 +49,9 @@
 ;; Flycheck
 (add-hook 'after-init-hook #'global-flycheck-mode)
 (setq-default flycheck-disabled-checkers '(javascript-jshint))
+
+;; Beacon mode
+(beacon-mode 1)
 
 ;; Custom global key bindings
 (autoload 'zap-up-to-char "misc"
@@ -92,7 +95,7 @@
   (setq sgml-basic-offset js-indent-level
         sgml-attribute-offset js-indent-level))
 
-(setq-default js2-global-externs '("test" "expect" "jest" "describe" "beforeEach" "afterEach" "setTimeout" "fetch" "Blob" "Response" "Request" "Headers" "it"))
+(setq-default js2-global-externs '("test" "expect" "jest" "describe" "beforeEach" "afterEach" "beforeAll" "afterAll" "setTimeout" "fetch" "Blob" "Response" "Request" "Headers" "it"))
 
 (require 'string-inflection)
 
@@ -173,6 +176,12 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (require 'org)
 (define-key global-map "\C-cl" 'org-store-link)
 (setq org-log-done t)
+
+(require 'prettier-js)
+(add-hook 'js2-mode-hook 'prettier-js-mode)
+
+(require 'syntactic-close)
+(global-set-key (kbd "C-}") 'syntactic-close)
 
 (provide '.emacs)
 ;;; .emacs ends here
