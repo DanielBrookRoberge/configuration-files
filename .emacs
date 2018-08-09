@@ -1,12 +1,20 @@
 ;; Macintosh/Aquamacs Specific Stuff
+;; ____________________________________________________________________________
+;; Aquamacs custom-file warning:
+;; Warning: After loading this .emacs file, Aquamacs will also load
+;; customizations from `custom-file' (customizations.el). Any settings there
+;; will override those made here.
+;; Consider moving your startup settings to the Preferences.el file, which
+;; is loaded after `custom-file':
+;; ~/Library/Preferences/Aquamacs Emacs/Preferences
+;; _____________________________________________________________________________
 (osx-key-mode -1)
 (setq
  ns-command-modifier 'meta
  ns-alternate-modifier nil
  ns-use-mac-modifier-symbols nil
  aquamacs-scratch-file nil
- initial-major-mode 'emacs-lisp-mode
- desktop-restore-eager 50)
+ initial-major-mode 'emacs-lisp-mode)
 (one-buffer-one-frame-mode -1)
 (tabbar-mode -1)
 (cua-mode 0)
@@ -23,6 +31,7 @@
 (tool-bar-mode 0)
 (global-unset-key (kbd "C-z"))
 (show-paren-mode t)
+(global-set-key (kbd "C-x C-b") 'ibuffer)
 
 ;; Initialize packages
 (require 'package)
@@ -40,6 +49,7 @@
       ac-use-menu-map t)
 (define-key ac-menu-map "<up>" 'ac-next)
 (define-key ac-menu-map "<down>" 'ac-previous)
+(ac-flyspell-workaround)
 
 (eval-after-load 'tern
    '(progn
@@ -47,7 +57,9 @@
       (tern-ac-setup)))
 
 ;; Flycheck
-(add-hook 'after-init-hook #'global-flycheck-mode)
+(use-package flycheck
+  :ensure t
+  :init (global-flycheck-mode))
 (setq-default flycheck-disabled-checkers '(javascript-jshint))
 
 ;; Beacon mode
@@ -62,6 +74,7 @@
 (global-set-key "\M-Z" 'zap-up-to-char)
 (global-set-key "\C-x\M-r" 'revert-buffer)
 (global-set-key (kbd "M-S-SPC") 'just-one-space)
+(global-set-key (kbd "C-%") 'replace-string)
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -78,9 +91,6 @@
 (add-to-list 'auto-mode-alist '("\\.html\\'" . html-mode))
 ;; If there's a problem with selection, the var is mouse-save-then-kill
 
-;; Set up projectile!
-(projectile-global-mode)
-
 ;; Set up for React/JSX development
 (add-to-list 'auto-mode-alist '("\\.jsx$" . rjsx-mode))
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
@@ -89,34 +99,23 @@
   (defvar sgml-basic-offset)
   (defvar sgml-attribute-offset)
   (defvar js-indent-level)
-  ;; (diminish 'js2-mode "JS")
-  ;; (diminish 'js2-jsx-mode "JSX")
   (setq js-indent-level 2)
   (setq sgml-basic-offset js-indent-level
         sgml-attribute-offset js-indent-level))
 
 (setq-default js2-global-externs '("test" "expect" "jest" "describe" "beforeEach" "afterEach" "beforeAll" "afterAll" "setTimeout" "fetch" "Blob" "Response" "Request" "Headers" "it"))
 
-(require 'string-inflection)
-
-(defun my-js2-mode-hook ()
-  (local-set-key (kbd "C-c C-l") 'string-inflection-java-style-cycle)
-  (tern-mode t)
-  )
+(defun my-js2-mode-hook () (tern-mode t))
 
 (add-hook 'js2-mode-hook 'my-js2-mode-hook)
 
 (defun my-json-mode-hook ()
-  (setq-local js-indent-level 2)
-  )
+  (setq-local js-indent-level 2))
 
 (add-hook 'json-mode-hook 'my-json-mode-hook)
 
 (require 'nvm)
 (nvm-use (caar (last (nvm--installed-versions))))
-
-(with-eval-after-load 'projectile
-  (add-hook 'projectile-after-switch-project-hook 'mjs/setup-local-eslint))
 
 (defun mjs/setup-local-eslint ()
     "If ESLint found in node_modules directory - use that for flycheck.
@@ -127,61 +126,73 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
       (setq flycheck-javascript-eslint-executable
             (and (file-exists-p local-eslint) local-eslint))))
 
-(autoload
-  'ace-jump-mode
-  "ace-jump-mode"
-  "Emacs quick move minor mode"
-  t)
-;; you can select the key you prefer to
-(define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
+;; Set up projectile!
+(use-package projectile
+  :hook (projectile-after-switch-project . mjs/setup-local-eslint)
+  :config (projectile-mode +1)
+  :ensure t
+  :pin melpa-stable)
 
-(require 'magit)
-(global-set-key (kbd "C-x g") 'magit-status)
+(use-package magit
+  :bind ("C-x g" . magit-status)
+  :hook (after-save . magit-after-save-refresh-status)
+  :config
+  (setq vc-handled-backends (delq 'Git vc-handled-backends))
+  (remove-hook 'server-switch-hook 'magit-commit-diff)
+  :ensure t)
 
-(require 'magit-gh-pulls)
-(add-hook 'magit-mode-hook 'turn-on-magit-gh-pulls)
+(use-package magit-gh-pulls
+  :hook (magit-mode . turn-on-magit-gh-pulls)
+  :requires magit
+  :ensure t)
 
-(global-set-key (kbd "C-%") 'replace-string)
-(global-set-key (kbd "C-c w s") 'copy-as-format-slack)
-(global-set-key (kbd "C-c w g") 'copy-as-format-github)
+(use-package copy-as-format
+  :ensure t
+  :bind (("C-c w s" . copy-as-format-slack)
+         ("C-c w g" . copy-as-format-github)
+         ("C-c w j" . copy-as-format-jira)))
 
 (when (memq window-system '(mac ns))
   (exec-path-from-shell-initialize))
 
-(setq vc-handled-backends (delq 'Git vc-handled-backends))
-(remove-hook 'server-switch-hook 'magit-commit-diff)
-(add-hook 'after-save-hook 'magit-after-save-refresh-status)
+(use-package expand-region
+  :bind ("C-=" . er/expand-region)
+  :ensure t)
 
-(require 'expand-region)
-(global-set-key (kbd "C-=") 'er/expand-region)
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode)
+  :ensure t)
 
-(require 'rainbow-delimiters)
-(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+(use-package wrap-region
+  :ensure t
+  :hook (prog-mode . wrap-region-mode)
+  :config (wrap-region-add-wrappers
+           '(("`" "`" nil '(js2-mode js2-jsx-mode rjsx-mode markdown-mode))
+             ("/* " " */" "*" '(js2-mode js2-jsx-mode rjsx-mode))
+             ("/" "/" nil '(js2-mode javascript-mode js2-jsx-mode rjsx-mode)))))
 
-(require 'wrap-region)
-(add-hook 'prog-mode-hook 'wrap-region-mode)
+(use-package js2-refactor
+  :ensure t
+  :hook (js2-mode . js2-refactor-mode)
+  :config (js2r-add-keybindings-with-prefix "C-c C-m"))
 
-(wrap-region-add-wrappers
- '(("`" "`" nil '(js2-mode js2-jsx-mode rjsx-mode markdown-mode))
-   ("/* " " */" "*" '(js2-mode js2-jsx-mode rjsx-mode))
-   ("/" "/" nil '(js2-mode javascript-mode js2-jsx-mode rjsx-mode))))
-
-(require 'js2-refactor)
-(add-hook 'js2-mode-hook #'js2-refactor-mode)
-(js2r-add-keybindings-with-prefix "C-c C-m")
-
-(require 'indium)
-(add-hook 'js-mode-hook #'indium-interaction-mode)
+(use-package indium
+  :ensure t
+  :hook (js-mode . indium-interaction-mode))
 
 (require 'org)
 (define-key global-map "\C-cl" 'org-store-link)
 (setq org-log-done t)
 
-(require 'prettier-js)
-(add-hook 'js2-mode-hook 'prettier-js-mode)
+(use-package prettier-js
+  :hook (js2-mode . prettier-js-mode)
+  :ensure t)
 
-(require 'syntactic-close)
-(global-set-key (kbd "C-}") 'syntactic-close)
+(use-package syntactic-close
+  :bind ("C-}" . syntactic-close)
+  :ensure t)
+
+(add-hook 'prog-mode-hook 'flyspell-prog-mode)
 
 (provide '.emacs)
 ;;; .emacs ends here
