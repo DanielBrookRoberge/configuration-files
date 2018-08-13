@@ -8,15 +8,17 @@
 ;; is loaded after `custom-file':
 ;; ~/Library/Preferences/Aquamacs Emacs/Preferences
 ;; _____________________________________________________________________________
-(osx-key-mode -1)
+(when (featurep 'aquamacs)
+  (osx-key-mode -1)
+  (one-buffer-one-frame-mode -1)
+  (tabbar-mode -1))
 (setq
  ns-command-modifier 'meta
  ns-alternate-modifier nil
  ns-use-mac-modifier-symbols nil
  aquamacs-scratch-file nil
- initial-major-mode 'emacs-lisp-mode)
-(one-buffer-one-frame-mode -1)
-(tabbar-mode -1)
+ initial-major-mode 'emacs-lisp-mode
+ indent-tabs-mode nil)
 (cua-mode 0)
 (setq select-enable-clipboard t)
 (setq gc-cons-threshold 20000000)
@@ -32,38 +34,44 @@
 (global-unset-key (kbd "C-z"))
 (show-paren-mode t)
 (global-set-key (kbd "C-x C-b") 'ibuffer)
+(delete-selection-mode 1)
 
 ;; Initialize packages
 (require 'package)
-(package-initialize)
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+(package-initialize)
 
-(setq sml/no-confirm-load-theme t)
-(setq sml/theme 'light-powerline)
-(sml/setup)
+(use-package smart-mode-line-powerline-theme :ensure t)
+(use-package smart-mode-line
+  :ensure t
+  :config
+  (setq sml/no-confirm-load-theme t)
+  (setq sml/theme 'light-powerline)
+  (sml/setup))
 
-;; Autocomplete
-(require 'auto-complete-config)
-(ac-config-default)
-(setq ac-auto-show-menu nil
-      ac-use-menu-map t)
-(define-key ac-menu-map "<up>" 'ac-next)
-(define-key ac-menu-map "<down>" 'ac-previous)
-(ac-flyspell-workaround)
+(use-package auto-complete
+  :ensure t
+  :config
 
-(eval-after-load 'tern
-   '(progn
-      (require 'tern-auto-complete)
-      (tern-ac-setup)))
+  ;; (require 'auto-complete-config)
+  (ac-config-default)
+  (setq ac-auto-show-menu nil
+        ac-use-menu-map t)
+  (define-key ac-menu-map "<up>" 'ac-next)
+  (define-key ac-menu-map "<down>" 'ac-previous)
+  (ac-flyspell-workaround))
 
-;; Flycheck
 (use-package flycheck
   :ensure t
-  :init (global-flycheck-mode))
+  :init (global-flycheck-mode)
+  :custom
+  (flycheck-check-syntax-automatically (quote (save idle-change mode-enabled)))
+  (flycheck-display-errors-delay 40)
+  (flycheck-idle-change-delay 2)
+  (flycheck-javascript-eslint-executable "/Users/daniel/dev/mobot/node_modules/.bin/eslint"))
 (setq-default flycheck-disabled-checkers '(javascript-jshint))
-
-;; Beacon mode
-(beacon-mode 1)
 
 ;; Custom global key bindings
 (autoload 'zap-up-to-char "misc"
@@ -75,13 +83,10 @@
 (global-set-key "\C-x\M-r" 'revert-buffer)
 (global-set-key (kbd "M-S-SPC") 'just-one-space)
 (global-set-key (kbd "C-%") 'replace-string)
-
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(js-mode-default ((t (:inherit prog-mode-default :height 120 :family "Monaco"))) t))
+(eval-after-load "flyspell"
+  '(progn
+     (define-key flyspell-mouse-map [down-mouse-3] #'flyspell-correct-word)
+     (define-key flyspell-mouse-map [mouse-3] #'undefined)))
 
 (add-hook 'html-mode-hook
         (lambda ()
@@ -92,30 +97,58 @@
 ;; If there's a problem with selection, the var is mouse-save-then-kill
 
 ;; Set up for React/JSX development
-(add-to-list 'auto-mode-alist '("\\.jsx$" . rjsx-mode))
-(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+(use-package js2-mode
+  :ensure t
+  :mode "\\.js$"
+  :custom
+  (js-indent-level 2)
+  (js2-bounce-indent-p nil)
+  (js2-include-node-externs t)
+  (js2-mode-assume-strict t)
+  (js2-mode-indent-ignore-first-tab nil)
+  (js2-mode-show-parse-errors nil)
+  (js2-strict-missing-semi-warning nil)
+  (js2-global-externs '("test" "expect" "jest" "describe" "beforeEach" "afterEach" "beforeAll" "afterAll" "setTimeout" "fetch" "Blob" "Response" "Request" "Headers" "it")))
 
-(with-eval-after-load 'js2-mode
-  (defvar sgml-basic-offset)
-  (defvar sgml-attribute-offset)
-  (defvar js-indent-level)
-  (setq js-indent-level 2)
-  (setq sgml-basic-offset js-indent-level
-        sgml-attribute-offset js-indent-level))
+(use-package rjsx-mode
+  :ensure t
+  :mode "\\.jsx$"
+  :custom
+  (sgml-basic-offset 2)
+  (sgml-attribute-offset 2))
 
-(setq-default js2-global-externs '("test" "expect" "jest" "describe" "beforeEach" "afterEach" "beforeAll" "afterAll" "setTimeout" "fetch" "Blob" "Response" "Request" "Headers" "it"))
+(use-package tern
+  :ensure t
+  :hook (js2-mode . tern-mode))
 
-(defun my-js2-mode-hook () (tern-mode t))
+(use-package tern-auto-complete
+  :ensure t
+  :after (tern auto-complete-config)
+  :config (tern-ac-setup))
 
-(add-hook 'js2-mode-hook 'my-js2-mode-hook)
+(use-package xref-js2
+  :ensure t
+  :config
+  (define-key js2-mode-map (kbd "M-.") nil)
+  (define-key tern-mode-keymap (kbd "M-.") nil)
+  (define-key tern-mode-keymap (kbd "M-,") nil)
+  (add-hook 'js2-mode-hook (lambda () (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t))))
 
-(defun my-json-mode-hook ()
-  (setq-local js-indent-level 2))
+(use-package js2-refactor
+  :ensure t
+  :hook (js2-mode . js2-refactor-mode)
+  :config (js2r-add-keybindings-with-prefix "C-c C-m")
+  :custom
+  (js2r-always-insert-parens-around-arrow-function-params t)
+  (js2r-prefered-quote-type 2))
 
-(add-hook 'json-mode-hook 'my-json-mode-hook)
+(use-package json-mode
+  :ensure t
+  :config (add-hook 'json-mode-hook (lambda () (setq-local js-indent-level 2))))
 
-(require 'nvm)
-(nvm-use (caar (last (nvm--installed-versions))))
+(use-package nvm
+  :ensure t
+  :config (nvm-use (caar (last (nvm--installed-versions)))))
 
 (defun mjs/setup-local-eslint ()
     "If ESLint found in node_modules directory - use that for flycheck.
@@ -126,7 +159,6 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
       (setq flycheck-javascript-eslint-executable
             (and (file-exists-p local-eslint) local-eslint))))
 
-;; Set up projectile!
 (use-package projectile
   :hook (projectile-after-switch-project . mjs/setup-local-eslint)
   :config (projectile-mode +1)
@@ -139,11 +171,15 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   :config
   (setq vc-handled-backends (delq 'Git vc-handled-backends))
   (remove-hook 'server-switch-hook 'magit-commit-diff)
+  :custom
+  (global-magit-file-mode t)
+  (magit-branch-read-upstream-first 'fallback)
+  (magit-commit-ask-to-stage nil)
+  (magit-save-repository-buffers 'dontask)
   :ensure t)
 
 (use-package magit-gh-pulls
   :hook (magit-mode . turn-on-magit-gh-pulls)
-  :requires magit
   :ensure t)
 
 (use-package copy-as-format
@@ -171,11 +207,6 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
              ("/* " " */" "*" '(js2-mode js2-jsx-mode rjsx-mode))
              ("/" "/" nil '(js2-mode javascript-mode js2-jsx-mode rjsx-mode)))))
 
-(use-package js2-refactor
-  :ensure t
-  :hook (js2-mode . js2-refactor-mode)
-  :config (js2r-add-keybindings-with-prefix "C-c C-m"))
-
 (use-package indium
   :ensure t
   :hook (js-mode . indium-interaction-mode))
@@ -194,5 +225,83 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
 
-(provide '.emacs)
-;;; .emacs ends here
+;; packages with no further configuration
+(use-package arduino-mode :ensure t)
+(use-package clojure-mode :ensure t)
+(use-package dockerfile-mode :ensure t)
+(use-package gitignore-mode :ensure t)
+(use-package glsl-mode :ensure t)
+(use-package go-mode :ensure t)
+(use-package jade-mode :ensure t)
+(use-package markdown-mode :ensure t)
+(use-package nasm-mode :ensure t)
+(use-package python :ensure t)
+(use-package rust-mode :ensure t)
+(use-package yaml-mode :ensure t)
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(Info-use-header-line nil)
+ '(backup-directory-alist (quote (("" . "~/.emacs.d/backup"))))
+ '(cua-mode nil nil (cua-base))
+ '(default-frame-alist
+    (quote
+     ((tool-bar-lines . 0)
+      (menu-bar-lines . 1)
+      (foreground-color . "Black")
+      (background-color . "White")
+      (cursor-type . box)
+      (cursor-color . "Red")
+      (vertical-scroll-bars . right)
+      (internal-border-width . 0)
+      (left-fringe . 1)
+      (right-fringe)
+      (fringe))))
+ '(display-buffer-function nil)
+ '(ispell-program-name "aspell")
+ '(kill-do-not-save-duplicates t)
+ '(mouse-drag-copy-region nil)
+ '(ns-tool-bar-display-mode (quote both) t)
+ '(ns-tool-bar-size-mode nil t)
+ '(package-selected-packages
+   (quote
+    (xref-js2 yaml-mode rust-mode nasm-mode markdown-mode jade-mode go-mode glsl-mode gitignore-mode dockerfile-mode clojure-mode arduino-mode syntactic-close prettier-js indium wrap-region rainbow-delimiters expand-region use-package tern-auto-complete smart-mode-line-powerline-theme rjsx-mode projectile nvm magit-gh-pulls json-mode js2-refactor flycheck exec-path-from-shell copy-as-format)))
+ '(pop-up-frames nil)
+ '(rm-blacklist
+   (quote
+    (" wr" " hl-p" " AC" " Spc" " yas" " js2r" " Tern" " js-interaction" " Prettier" " guru" " (*)" " Fly")))
+ '(rm-text-properties
+   (quote
+    (("\\` Ovwrt\\'"
+      (quote face)
+      (quote font-lock-warning-face))
+     ("\\` FlyC:"
+      (quote face)
+      (quote font-lock-comment-face)))))
+ '(sql-product (quote postgres))
+ '(uniquify-buffer-name-style (quote post-forward) nil (uniquify))
+ '(visual-line-mode nil t))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "White" :foreground "Black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 120 :width normal :foundry "nil" :family "Monaco"))))
+ '(autoface-default ((t (:inherit default))))
+ '(completion-list-mode-default ((t (:inherit autoface-default))) t)
+ '(js-mode-default ((t (:inherit prog-mode-default :height 120 :family "Monaco"))) t)
+ '(js2-mode-default ((t (:inherit js-mode-default))) t)
+ '(magit-popup-mode-default ((t (:inherit autoface-default))) t)
+ '(magit-process-mode-default ((t (:inherit magit-mode-default))) t)
+ '(magit-status-mode-default ((t (:inherit magit-mode-default))) t)
+ '(minibuffer-inactive-mode-default ((t (:inherit autoface-default))) t)
+ '(minibuffer-prompt ((t (:foreground "medium blue" :family "Lucida Grande"))))
+ '(mode-line ((t (:background "grey85" :foreground "black" :box (:line-width -1 :color "white") :family "Lucida Grande"))))
+ '(mode-line-inactive ((t (:inherit mode-line :background "grey85" :foreground "grey20" :box (:line-width -2 :color "white") :slant normal))))
+ '(org-mode-default ((t (:inherit autoface-default :stipple nil :strike-through nil :underline nil :slant normal :weight normal :height 120 :width normal :family "Monaco"))))
+ '(sh-mode-default ((t (:inherit prog-mode-default))) t)
+ '(text-mode-default ((t (:inherit autoface-default :stipple nil :strike-through nil :underline nil :slant normal :weight normal :height 130 :width normal :family "Lucida Grande"))))
+ '(yaml-mode-default ((t (:inherit default))) t))
