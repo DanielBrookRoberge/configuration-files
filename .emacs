@@ -36,12 +36,19 @@
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (delete-selection-mode 1)
 
+;; Spell checking
+(setq ispell-program-name "aspell"
+      ispell-extra-args '("--sug-mode=ultra" "--run-together" "--run-together-limit=4"))
+
 ;; Initialize packages
 (require 'package)
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (package-initialize)
+
+(use-package paradox
+  :ensure t)
 
 (use-package smart-mode-line-powerline-theme :ensure t)
 (use-package smart-mode-line
@@ -72,6 +79,11 @@
   (flycheck-idle-change-delay 2)
   (flycheck-javascript-eslint-executable "/Users/daniel/dev/mobot/node_modules/.bin/eslint"))
 (setq-default flycheck-disabled-checkers '(javascript-jshint))
+
+(use-package flycheck-pos-tip
+  :ensure t
+  :config
+  (flycheck-pos-tip-mode))
 
 ;; Custom global key bindings
 (autoload 'zap-up-to-char "misc"
@@ -119,7 +131,10 @@
 
 (use-package tern
   :ensure t
-  :hook (js2-mode . tern-mode))
+  :hook (js2-mode . tern-mode)
+  :config
+  (define-key tern-mode-keymap (kbd "M-.") nil)
+  (define-key tern-mode-keymap (kbd "M-,") nil))
 
 (use-package tern-auto-complete
   :ensure t
@@ -130,8 +145,6 @@
   :ensure t
   :config
   (define-key js2-mode-map (kbd "M-.") nil)
-  (define-key tern-mode-keymap (kbd "M-.") nil)
-  (define-key tern-mode-keymap (kbd "M-,") nil)
   (add-hook 'js2-mode-hook (lambda () (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t))))
 
 (use-package js2-refactor
@@ -175,6 +188,7 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   (global-magit-file-mode t)
   (magit-branch-read-upstream-first 'fallback)
   (magit-commit-ask-to-stage nil)
+  (magit-stage-all-confirm nil)
   (magit-save-repository-buffers 'dontask)
   :ensure t)
 
@@ -207,6 +221,14 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
              ("/* " " */" "*" '(js2-mode js2-jsx-mode rjsx-mode))
              ("/" "/" nil '(js2-mode javascript-mode js2-jsx-mode rjsx-mode)))))
 
+(use-package duplicate-thing
+  :ensure t
+  :bind ("C-c u" . duplicate-thing))
+
+(use-package volatile-highlights
+  :ensure t
+  :config (volatile-highlights-mode t))
+
 (use-package indium
   :ensure t
   :hook (js-mode . indium-interaction-mode))
@@ -222,6 +244,35 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package syntactic-close
   :bind ("C-}" . syntactic-close)
   :ensure t)
+
+(use-package yasnippet
+  :ensure t
+  :bind (:map yas-minor-mode-map
+              ("<tab>" . nil)
+              ("TAB" . nil)
+              ("C-<tab>" . yas-expand))
+  :config
+  (yas-global-mode 1)
+  (setq-default ac-sources (push 'ac-source-yasnippet ac-sources)))
+
+(use-package yasnippet-snippets
+  :ensure t)
+
+(use-package smex
+  :ensure t
+  :bind (("M-x" . smex) ("M-X" . smex-major-mode-commands)))
+
+(use-package move-text
+  :ensure t
+  :config (move-text-default-bindings))
+
+(use-package avy
+  :ensure t
+  :bind ("C-:" . avy-goto-char))
+
+(use-package anzu
+  :ensure t
+  :config (global-anzu-mode +1))
 
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
 
@@ -239,14 +290,35 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package rust-mode :ensure t)
 (use-package yaml-mode :ensure t)
 
+;; smart openline
+(defun prelude-smart-open-line (arg)
+  "Insert an empty line after the current line.
+Position the cursor at its beginning, according to the current mode.
+With a prefix ARG open line above the current line."
+  (interactive "P")
+  (if arg
+      (prelude-smart-open-line-above)
+    (progn
+      (move-end-of-line nil)
+      (newline-and-indent))))
+
+(defun prelude-smart-open-line-above ()
+  "Insert an empty line above the current line.
+Position the cursor at it's beginning, according to the current mode."
+  (interactive)
+  (move-beginning-of-line nil)
+  (newline-and-indent)
+  (forward-line -1)
+  (indent-according-to-mode))
+
+(global-set-key (kbd "C-o") 'prelude-smart-open-line)
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(Info-use-header-line nil)
  '(backup-directory-alist (quote (("" . "~/.emacs.d/backup"))))
- '(cua-mode nil nil (cua-base))
  '(default-frame-alist
     (quote
      ((tool-bar-lines . 0)
@@ -260,19 +332,15 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
       (left-fringe . 1)
       (right-fringe)
       (fringe))))
- '(display-buffer-function nil)
- '(ispell-program-name "aspell")
  '(kill-do-not-save-duplicates t)
- '(mouse-drag-copy-region nil)
  '(ns-tool-bar-display-mode (quote both) t)
  '(ns-tool-bar-size-mode nil t)
  '(package-selected-packages
    (quote
-    (xref-js2 yaml-mode rust-mode nasm-mode markdown-mode jade-mode go-mode glsl-mode gitignore-mode dockerfile-mode clojure-mode arduino-mode syntactic-close prettier-js indium wrap-region rainbow-delimiters expand-region use-package tern-auto-complete smart-mode-line-powerline-theme rjsx-mode projectile nvm magit-gh-pulls json-mode js2-refactor flycheck exec-path-from-shell copy-as-format)))
- '(pop-up-frames nil)
+    (anzu avy paradox move-text flycheck-pos-tip smex yasnippet-snippets volatile-highlights duplicate-thing xref-js2 yaml-mode rust-mode nasm-mode markdown-mode jade-mode go-mode glsl-mode gitignore-mode dockerfile-mode clojure-mode arduino-mode syntactic-close prettier-js indium wrap-region rainbow-delimiters expand-region use-package tern-auto-complete smart-mode-line-powerline-theme rjsx-mode projectile nvm magit-gh-pulls json-mode js2-refactor flycheck exec-path-from-shell copy-as-format)))
  '(rm-blacklist
    (quote
-    (" wr" " hl-p" " AC" " Spc" " yas" " js2r" " Tern" " js-interaction" " Prettier" " guru" " (*)" " Fly")))
+    (" wr" " hl-p" " AC" " Spc" " yas" " js2r" " Tern" " js-interaction" " Prettier" " guru" " (*)" " Fly" " Anzu" " VHl")))
  '(rm-text-properties
    (quote
     (("\\` Ovwrt\\'"
