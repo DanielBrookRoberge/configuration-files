@@ -8,8 +8,7 @@
  confirm-kill-emacs 'y-or-n-p)
 (setq-default indent-tabs-mode nil)
 
-;; General editing things
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
+;; Global modes
 (desktop-save-mode t)
 (server-start)
 (global-auto-revert-mode 1)
@@ -18,6 +17,9 @@
 (show-paren-mode t)
 (delete-selection-mode 1)
 (put 'overwrite-mode 'disabled t)
+
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+(add-to-list 'auto-mode-alist '("\\.html\\'" . html-mode))
 
 ;; Global key modifications
 (global-unset-key (kbd "C-z"))
@@ -38,6 +40,7 @@
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (package-initialize)
 
+;; Add AucTeX back at some point
 (use-package flyspell
   :bind (:map flyspell-mouse-map
               ([down-mouse-3] . flyspell-correct-word)
@@ -46,6 +49,11 @@
 
 (use-package browse-kill-ring
   :bind ("C-M-y" . browse-kill-ring))
+
+(use-package misc
+  :ensure nil
+  :bind ("M-Z" . zap-up-to-char))
+
 (use-package paradox
   :ensure t)
 
@@ -80,21 +88,6 @@
 (use-package flycheck-pos-tip
   :config (flycheck-pos-tip-mode))
 
-;; Custom global key bindings
-(autoload 'zap-up-to-char "misc"
-    "Kill up to, but not including ARGth occurrence of CHAR.
-
-  \(fn arg char)"
-    'interactive)
-(global-set-key "\M-Z" 'zap-up-to-char)
-
-(add-hook 'html-mode-hook
-        (lambda ()
-          ;; Default indentation is usually 2 spaces, changing to 4.
-          (set (make-local-variable 'sgml-basic-offset) 4)))
-
-(add-to-list 'auto-mode-alist '("\\.html\\'" . html-mode))
-;; If there's a problem with selection, the var is mouse-save-then-kill
 
 ;; Set up for React/JSX development
 (use-package js2-mode
