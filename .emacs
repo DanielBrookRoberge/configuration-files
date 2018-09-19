@@ -41,6 +41,7 @@
       ispell-extra-args '("--sug-mode=ultra" "--run-together" "--run-together-limit=4"))
 
 ;; Initialize packages
+(setq use-package-always-ensure t)
 (require 'package)
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -52,17 +53,13 @@
 
 (use-package smart-mode-line-powerline-theme :ensure t)
 (use-package smart-mode-line
-  :ensure t
   :config
   (setq sml/no-confirm-load-theme t)
   (setq sml/theme 'light-powerline)
   (sml/setup))
 
 (use-package auto-complete
-  :ensure t
   :config
-
-  ;; (require 'auto-complete-config)
   (ac-config-default)
   (setq ac-auto-show-menu nil
         ac-use-menu-map t)
@@ -71,7 +68,6 @@
   (ac-flyspell-workaround))
 
 (use-package flycheck
-  :ensure t
   :init (global-flycheck-mode)
   :custom
   (flycheck-check-syntax-automatically (quote (save idle-change mode-enabled)))
@@ -81,9 +77,7 @@
 (setq-default flycheck-disabled-checkers '(javascript-jshint))
 
 (use-package flycheck-pos-tip
-  :ensure t
-  :config
-  (flycheck-pos-tip-mode))
+  :config (flycheck-pos-tip-mode))
 
 ;; Custom global key bindings
 (autoload 'zap-up-to-char "misc"
@@ -110,7 +104,6 @@
 
 ;; Set up for React/JSX development
 (use-package js2-mode
-  :ensure t
   :mode "\\.js$"
   :custom
   (js-indent-level 2)
@@ -123,32 +116,27 @@
   (js2-global-externs '("test" "expect" "jest" "describe" "beforeEach" "afterEach" "beforeAll" "afterAll" "setTimeout" "fetch" "Blob" "Response" "Request" "Headers" "it")))
 
 (use-package rjsx-mode
-  :ensure t
   :mode "\\.jsx$"
   :custom
   (sgml-basic-offset 2)
   (sgml-attribute-offset 2))
 
 (use-package tern
-  :ensure t
   :hook (js2-mode . tern-mode)
   :config
   (define-key tern-mode-keymap (kbd "M-.") nil)
   (define-key tern-mode-keymap (kbd "M-,") nil))
 
 (use-package tern-auto-complete
-  :ensure t
   :after (tern auto-complete-config)
   :config (tern-ac-setup))
 
 (use-package xref-js2
-  :ensure t
   :config
   (define-key js2-mode-map (kbd "M-.") nil)
   (add-hook 'js2-mode-hook (lambda () (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t))))
 
 (use-package js2-refactor
-  :ensure t
   :hook (js2-mode . js2-refactor-mode)
   :config (js2r-add-keybindings-with-prefix "C-c C-m")
   :custom
@@ -156,11 +144,9 @@
   (js2r-prefered-quote-type 2))
 
 (use-package json-mode
-  :ensure t
   :config (add-hook 'json-mode-hook (lambda () (setq-local js-indent-level 2))))
 
 (use-package nvm
-  :ensure t
   :config (nvm-use (caar (last (nvm--installed-versions)))))
 
 (defun mjs/setup-local-eslint ()
@@ -175,7 +161,6 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package projectile
   :hook (projectile-after-switch-project . mjs/setup-local-eslint)
   :config (projectile-mode +1)
-  :ensure t
   :pin melpa-stable)
 
 (use-package magit
@@ -189,12 +174,10 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   (magit-branch-read-upstream-first 'fallback)
   (magit-commit-ask-to-stage nil)
   (magit-stage-all-confirm nil)
-  (magit-save-repository-buffers 'dontask)
-  :ensure t)
+  (magit-save-repository-buffers 'dontask))
 
 (use-package magit-gh-pulls
-  :hook (magit-mode . turn-on-magit-gh-pulls)
-  :ensure t)
+  :hook (magit-mode . turn-on-magit-gh-pulls))
 
 (use-package copy-as-format
   :ensure t
@@ -206,12 +189,10 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   (exec-path-from-shell-initialize))
 
 (use-package expand-region
-  :bind ("C-=" . er/expand-region)
-  :ensure t)
+  :bind ("C-=" . er/expand-region))
 
 (use-package rainbow-delimiters
-  :hook (prog-mode . rainbow-delimiters-mode)
-  :ensure t)
+  :hook (prog-mode . rainbow-delimiters-mode))
 
 (use-package wrap-region
   :ensure t
@@ -222,15 +203,12 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
              ("/" "/" nil '(js2-mode javascript-mode js2-jsx-mode rjsx-mode)))))
 
 (use-package duplicate-thing
-  :ensure t
   :bind ("C-c u" . duplicate-thing))
 
 (use-package volatile-highlights
-  :ensure t
   :config (volatile-highlights-mode t))
 
 (use-package indium
-  :ensure t
   :hook (js-mode . indium-interaction-mode))
 
 (require 'org)
@@ -238,15 +216,12 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (setq org-log-done t)
 
 (use-package prettier-js
-  :hook (js2-mode . prettier-js-mode)
-  :ensure t)
+  :hook (js2-mode . prettier-js-mode))
 
 (use-package syntactic-close
-  :bind ("C-}" . syntactic-close)
-  :ensure t)
+  :bind ("C-}" . syntactic-close))
 
 (use-package yasnippet
-  :ensure t
   :bind (:map yas-minor-mode-map
               ("<tab>" . nil)
               ("TAB" . nil)
@@ -255,40 +230,35 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   (yas-global-mode 1)
   (setq-default ac-sources (push 'ac-source-yasnippet ac-sources)))
 
-(use-package yasnippet-snippets
-  :ensure t)
+(use-package yasnippet-snippets)
 
 (use-package smex
-  :ensure t
   :bind (("M-x" . smex) ("M-X" . smex-major-mode-commands)))
 
 (use-package move-text
-  :ensure t
   :config (move-text-default-bindings))
 
 (use-package avy
-  :ensure t
   :bind ("C-:" . avy-goto-char))
 
 (use-package anzu
-  :ensure t
   :config (global-anzu-mode +1))
 
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
 
 ;; packages with no further configuration
-(use-package arduino-mode :ensure t)
-(use-package clojure-mode :ensure t)
-(use-package dockerfile-mode :ensure t)
-(use-package gitignore-mode :ensure t)
-(use-package glsl-mode :ensure t)
-(use-package go-mode :ensure t)
-(use-package jade-mode :ensure t)
-(use-package markdown-mode :ensure t)
-(use-package nasm-mode :ensure t)
-(use-package python :ensure t)
-(use-package rust-mode :ensure t)
-(use-package yaml-mode :ensure t)
+(use-package arduino-mode)
+(use-package clojure-mode)
+(use-package dockerfile-mode)
+(use-package gitignore-mode)
+(use-package glsl-mode)
+(use-package go-mode)
+(use-package jade-mode)
+(use-package markdown-mode)
+(use-package nasm-mode)
+(use-package python)
+(use-package rust-mode)
+(use-package yaml-mode)
 
 ;; smart openline
 (defun prelude-smart-open-line (arg)
