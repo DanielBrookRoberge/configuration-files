@@ -1,28 +1,11 @@
-;; Macintosh/Aquamacs Specific Stuff
-;; ____________________________________________________________________________
-;; Aquamacs custom-file warning:
-;; Warning: After loading this .emacs file, Aquamacs will also load
-;; customizations from `custom-file' (customizations.el). Any settings there
-;; will override those made here.
-;; Consider moving your startup settings to the Preferences.el file, which
-;; is loaded after `custom-file':
-;; ~/Library/Preferences/Aquamacs Emacs/Preferences
-;; _____________________________________________________________________________
-(when (featurep 'aquamacs)
-  (osx-key-mode -1)
-  (one-buffer-one-frame-mode -1)
-  (tabbar-mode -1))
+;; Global settings
 (setq
  ns-command-modifier 'meta
  ns-alternate-modifier nil
- ns-use-mac-modifier-symbols nil
- aquamacs-scratch-file nil
- initial-major-mode 'emacs-lisp-mode
- indent-tabs-mode nil)
-(cua-mode 0)
-(setq select-enable-clipboard t)
-(setq gc-cons-threshold 20000000)
-(setq confirm-kill-emacs 'y-or-n-p)
+ read-file-name-completion-ignore-case 't
+ select-enable-clipboard t
+ gc-cons-threshold 20000000
+ confirm-kill-emacs 'y-or-n-p)
 (setq-default indent-tabs-mode nil)
 
 ;; General editing things
@@ -55,6 +38,14 @@
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (package-initialize)
 
+(use-package flyspell
+  :bind (:map flyspell-mouse-map
+              ([down-mouse-3] . flyspell-correct-word)
+              ([mouse-3] . undefined))
+  :hook (prog-mode . flyspell-prog-mode))
+
+(use-package browse-kill-ring
+  :bind ("C-M-y" . browse-kill-ring))
 (use-package paradox
   :ensure t)
 
@@ -96,10 +87,6 @@
   \(fn arg char)"
     'interactive)
 (global-set-key "\M-Z" 'zap-up-to-char)
-(eval-after-load "flyspell"
-  '(progn
-     (define-key flyspell-mouse-map [down-mouse-3] #'flyspell-correct-word)
-     (define-key flyspell-mouse-map [mouse-3] #'undefined)))
 
 (add-hook 'html-mode-hook
         (lambda ()
@@ -250,7 +237,6 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package anzu
   :config (global-anzu-mode +1))
 
-(add-hook 'prog-mode-hook 'flyspell-prog-mode)
 (use-package auto-highlight-symbol
   :config (global-auto-highlight-symbol-mode t))
 
