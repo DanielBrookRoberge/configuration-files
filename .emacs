@@ -31,10 +31,14 @@
 (server-start)
 (global-auto-revert-mode 1)
 (tool-bar-mode 0)
-(global-unset-key (kbd "C-z"))
 (show-paren-mode t)
-(global-set-key (kbd "C-x C-b") 'ibuffer)
 (delete-selection-mode 1)
+;; Global key modifications
+(global-unset-key (kbd "C-z"))
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+(global-set-key (kbd "C-x M-r") 'revert-buffer)
+(global-set-key (kbd "M-S-SPC") 'just-one-space)
+(global-set-key (kbd "C-%") 'replace-string)
 
 ;; Spell checking
 (setq ispell-program-name "aspell"
@@ -86,9 +90,6 @@
   \(fn arg char)"
     'interactive)
 (global-set-key "\M-Z" 'zap-up-to-char)
-(global-set-key "\C-x\M-r" 'revert-buffer)
-(global-set-key (kbd "M-S-SPC") 'just-one-space)
-(global-set-key (kbd "C-%") 'replace-string)
 (eval-after-load "flyspell"
   '(progn
      (define-key flyspell-mouse-map [down-mouse-3] #'flyspell-correct-word)
