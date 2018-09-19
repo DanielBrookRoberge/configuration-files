@@ -30,9 +30,12 @@
 (desktop-save-mode t)
 (server-start)
 (global-auto-revert-mode 1)
+(add-hook 'after-revert-hook 'font-lock-fontify-buffer)
 (tool-bar-mode 0)
 (show-paren-mode t)
 (delete-selection-mode 1)
+(put 'overwrite-mode 'disabled t)
+
 ;; Global key modifications
 (global-unset-key (kbd "C-z"))
 (global-set-key (kbd "C-x C-b") 'ibuffer)
@@ -61,6 +64,9 @@
   (setq sml/no-confirm-load-theme t)
   (setq sml/theme 'light-powerline)
   (sml/setup))
+
+(use-package docker
+  :bind ("C-c C-d" . docker))
 
 (use-package auto-complete
   :config
@@ -167,6 +173,7 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package magit
   :bind ("C-x g" . magit-status)
   :hook (after-save . magit-after-save-refresh-status)
+  :hook (magit-mode . hl-line-mode)
   :config
   (setq vc-handled-backends (delq 'Git vc-handled-backends))
   (remove-hook 'server-switch-hook 'magit-commit-diff)
@@ -181,7 +188,6 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   :hook (magit-mode . turn-on-magit-gh-pulls))
 
 (use-package copy-as-format
-  :ensure t
   :bind (("C-c w s" . copy-as-format-slack)
          ("C-c w g" . copy-as-format-github)
          ("C-c w j" . copy-as-format-jira)))
@@ -196,7 +202,6 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   :hook (prog-mode . rainbow-delimiters-mode))
 
 (use-package wrap-region
-  :ensure t
   :hook (prog-mode . wrap-region-mode)
   :config (wrap-region-add-wrappers
            '(("`" "`" nil '(js2-mode js2-jsx-mode rjsx-mode markdown-mode))
@@ -212,9 +217,9 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package indium
   :hook (js-mode . indium-interaction-mode))
 
-(require 'org)
-(define-key global-map "\C-cl" 'org-store-link)
-(setq org-log-done t)
+(use-package org
+  :bind ("C-c l" . org-store-link)
+  :config (setq org-log-done t))
 
 (use-package prettier-js
   :hook (js2-mode . prettier-js-mode))
@@ -246,6 +251,8 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   :config (global-anzu-mode +1))
 
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
+(use-package auto-highlight-symbol
+  :config (global-auto-highlight-symbol-mode t))
 
 ;; packages with no further configuration
 (use-package arduino-mode)
