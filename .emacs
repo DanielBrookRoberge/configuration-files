@@ -55,7 +55,8 @@
   :bind ("M-Z" . zap-up-to-char))
 
 (use-package paradox
-  :ensure t)
+  :custom
+  (paradox-github-token ""))
 
 (use-package smart-mode-line-powerline-theme :ensure t)
 (use-package smart-mode-line
@@ -167,6 +168,9 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package magit-gh-pulls
   :hook (magit-mode . turn-on-magit-gh-pulls))
 
+(use-package magit-todos
+  :hook (magit-mode . magit-todos-mode))
+
 (use-package copy-as-format
   :bind (("C-c w s" . copy-as-format-slack)
          ("C-c w g" . copy-as-format-github)
@@ -270,6 +274,24 @@ Position the cursor at it's beginning, according to the current mode."
 
 (global-set-key (kbd "C-o") 'prelude-smart-open-line)
 
+;; Mark ring manipulation
+
+(defun push-mark-no-activate ()
+  "Pushes `point' to `mark-ring' and does not activate the region
+   Equivalent to \\[set-mark-command] when \\[transient-mark-mode] is disabled"
+  (interactive)
+  (push-mark (point) t nil)
+  (message "Pushed mark to ring"))
+
+(global-set-key (kbd "C-`") 'push-mark-no-activate)
+
+(defun jump-to-mark ()
+  "Jumps to the local mark, respecting the `mark-ring' order.
+  This is the same as using \\[set-mark-command] with the prefix argument."
+  (interactive)
+  (set-mark-command 1))
+(global-set-key (kbd "M-`") 'jump-to-mark)
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -294,7 +316,7 @@ Position the cursor at it's beginning, according to the current mode."
  '(ns-tool-bar-size-mode nil t)
  '(package-selected-packages
    (quote
-    (anzu avy paradox move-text flycheck-pos-tip smex yasnippet-snippets volatile-highlights duplicate-thing xref-js2 yaml-mode rust-mode nasm-mode markdown-mode jade-mode go-mode glsl-mode gitignore-mode dockerfile-mode clojure-mode arduino-mode syntactic-close prettier-js indium wrap-region rainbow-delimiters expand-region use-package tern-auto-complete smart-mode-line-powerline-theme rjsx-mode projectile nvm magit-gh-pulls json-mode js2-refactor flycheck exec-path-from-shell copy-as-format)))
+    (auto-highlight-symbol misc docker browse-kill-ring anzu avy paradox move-text flycheck-pos-tip smex yasnippet-snippets volatile-highlights duplicate-thing xref-js2 yaml-mode rust-mode nasm-mode markdown-mode jade-mode go-mode glsl-mode gitignore-mode dockerfile-mode clojure-mode arduino-mode syntactic-close prettier-js indium wrap-region rainbow-delimiters expand-region use-package tern-auto-complete smart-mode-line-powerline-theme rjsx-mode projectile nvm magit-gh-pulls json-mode js2-refactor flycheck exec-path-from-shell copy-as-format)))
  '(rm-blacklist
    (quote
     (" wr" " hl-p" " AC" " Spc" " yas" " js2r" " Tern" " js-interaction" " Prettier" " guru" " (*)" " Fly" " Anzu" " VHl")))
