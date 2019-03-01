@@ -237,18 +237,26 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package auto-highlight-symbol
   :config (global-auto-highlight-symbol-mode t))
 
+(use-package rust-mode
+  :custom (rust-format-on-save t))
+
+(use-package flycheck-rust
+  :hook (flycheck-mode . flycheck-rust-setup))
+
+(use-package go-mode
+  :hook (before-save . gofmt-before-save)
+  :hook (go-mode . (lambda () (setq tab-width 4) (setq indent-tabs-mode 1))))
+
 ;; packages with no further configuration
 (use-package arduino-mode)
 (use-package clojure-mode)
 (use-package dockerfile-mode)
 (use-package gitignore-mode)
 (use-package glsl-mode)
-(use-package go-mode)
 (use-package jade-mode)
 (use-package markdown-mode)
 (use-package nasm-mode)
 (use-package python)
-(use-package rust-mode)
 (use-package yaml-mode)
 
 ;; smart openline
