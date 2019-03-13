@@ -20,6 +20,7 @@
 
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 (add-to-list 'auto-mode-alist '("\\.html\\'" . html-mode))
+(add-to-list 'auto-mode-alist '("\\.env\\'" . sh-mode))
 
 ;; Global key modifications
 (global-unset-key (kbd "C-z"))
@@ -39,6 +40,21 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (package-initialize)
+
+(defun autoinsert-yas-expand()
+  "Replace text in yasnippet template."
+  (yas-expand-snippet (buffer-string) (point-min) (point-max)))
+
+(use-package autoinsert
+  :init
+  ;; Don't want to be prompted before insertion:
+  (setq auto-insert-query nil)
+
+  (setq auto-insert-directory (locate-user-emacs-file "templates"))
+  (auto-insert-mode 1)
+  :config
+  (define-auto-insert "\\.go$" ["default-go.go" autoinsert-yas-expand]))
+
 
 ;; Add AucTeX back at some point
 (use-package flyspell
@@ -68,6 +84,8 @@
 (use-package docker
   :bind ("C-c C-d" . docker))
 
+(use-package go-autocomplete)
+
 (use-package auto-complete
   :config
   (ac-config-default)
@@ -82,9 +100,8 @@
   :custom
   (flycheck-check-syntax-automatically (quote (save idle-change mode-enabled)))
   (flycheck-display-errors-delay 40)
-  (flycheck-idle-change-delay 2)
-  (flycheck-javascript-eslint-executable "/Users/daniel/dev/mobot/node_modules/.bin/eslint"))
-(setq-default flycheck-disabled-checkers '(javascript-jshint))
+  (flycheck-idle-change-delay 2))
+(setq-default flycheck-disabled-checkers '(javascript-jshint go-vet))
 
 (use-package flycheck-pos-tip
   :config (flycheck-pos-tip-mode))
@@ -149,7 +166,8 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package projectile
   :hook (projectile-after-switch-project . mjs/setup-local-eslint)
   :config (projectile-mode +1)
-  :pin melpa-stable)
+  :bind (:map projectile-mode-map
+              ("C-c p" . projectile-command-map)))
 
 (use-package magit
   :bind ("C-x g" . magit-status)
@@ -177,7 +195,8 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
          ("C-c w j" . copy-as-format-jira)))
 
 (when (memq window-system '(mac ns))
-  (exec-path-from-shell-initialize))
+  (use-package exec-path-from-shell
+    :config (exec-path-from-shell-initialize)))
 
 (use-package expand-region
   :bind ("C-=" . er/expand-region))
@@ -216,8 +235,9 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
               ("<tab>" . nil)
               ("TAB" . nil)
               ("C-<tab>" . yas-expand))
-  :config
+  :init
   (yas-global-mode 1)
+  :config
   (setq-default ac-sources (push 'ac-source-yasnippet ac-sources)))
 
 (use-package yasnippet-snippets)
@@ -234,9 +254,6 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package anzu
   :config (global-anzu-mode +1))
 
-(use-package auto-highlight-symbol
-  :config (global-auto-highlight-symbol-mode t))
-
 (use-package rust-mode
   :custom (rust-format-on-save t))
 
@@ -244,8 +261,25 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   :hook (flycheck-mode . flycheck-rust-setup))
 
 (use-package go-mode
+  :config (setq gofmt-command "goimports")
   :hook (before-save . gofmt-before-save)
-  :hook (go-mode . (lambda () (setq tab-width 4) (setq indent-tabs-mode 1))))
+  :hook (go-mode . (lambda ()
+                     (setq tab-width 4)
+                     (setq indent-tabs-mode 1)
+                     (subword-mode +1)))
+  :bind ("M-." . godef-jump))
+
+(use-package go-eldoc
+  :after go-mode
+  :hook (go-mode . go-eldoc-setup))
+
+(use-package go-guru
+  :hook (go-mode . go-guru-hl-identifier-mode))
+
+(use-package go-rename)
+
+(use-package go-projectile
+  :after (go-mode projectile))
 
 ;; packages with no further configuration
 (use-package arduino-mode)
@@ -327,7 +361,7 @@ Position the cursor at it's beginning, according to the current mode."
     (auto-highlight-symbol misc docker browse-kill-ring anzu avy paradox move-text flycheck-pos-tip smex yasnippet-snippets volatile-highlights duplicate-thing xref-js2 yaml-mode rust-mode nasm-mode markdown-mode jade-mode go-mode glsl-mode gitignore-mode dockerfile-mode clojure-mode arduino-mode syntactic-close prettier-js indium wrap-region rainbow-delimiters expand-region use-package tern-auto-complete smart-mode-line-powerline-theme rjsx-mode projectile nvm magit-gh-pulls json-mode js2-refactor flycheck exec-path-from-shell copy-as-format)))
  '(rm-blacklist
    (quote
-    (" wr" " hl-p" " AC" " Spc" " yas" " js2r" " Tern" " js-interaction" " Prettier" " guru" " (*)" " Fly" " Anzu" " VHl")))
+    (" wr" " hl-p" " AC" " Spc" " yas" " js2r" " Tern" " js-interaction" " Prettier" " guru" " (*)" " Fly" " Anzu" " VHl" " ElDoc")))
  '(rm-text-properties
    (quote
     (("\\` Ovwrt\\'"
