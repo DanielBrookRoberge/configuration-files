@@ -5,8 +5,12 @@
  read-file-name-completion-ignore-case 't
  select-enable-clipboard t
  gc-cons-threshold 20000000
- confirm-kill-emacs 'y-or-n-p)
+ confirm-kill-emacs 'y-or-n-p
+ create-lockfiles nil
+ custom-file "~/.emacs.d/custom.el")
 (setq-default indent-tabs-mode nil)
+(load custom-file)
+(add-to-list 'load-path "~/.emacs.d/site-lisp/")
 
 ;; Global modes
 (desktop-save-mode t)
@@ -53,7 +57,9 @@
   (setq auto-insert-directory (locate-user-emacs-file "templates"))
   (auto-insert-mode 1)
   :config
-  (define-auto-insert "\\.go$" ["default-go.go" autoinsert-yas-expand]))
+  (define-auto-insert "\\.go$" ["default-go.go" autoinsert-yas-expand])
+  (define-auto-insert "\\.sql$" ["default-sql.sql" autoinsert-yas-expand])
+  (define-auto-insert "\\.rb$" ["default-ruby.rb" autoinsert-yas-expand]))
 
 
 ;; Add AucTeX back at some point
@@ -62,6 +68,12 @@
               ([down-mouse-3] . flyspell-correct-word)
               ([mouse-3] . undefined))
   :hook (prog-mode . flyspell-prog-mode))
+
+(use-package ace-window
+  :bind ("M-o" . ace-window)
+  :custom
+  (aw-scope 'frame)
+  (aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
 
 (use-package browse-kill-ring
   :bind ("C-M-y" . browse-kill-ring))
@@ -98,10 +110,10 @@
 (use-package flycheck
   :init (global-flycheck-mode)
   :custom
-  (flycheck-check-syntax-automatically (quote (save idle-change mode-enabled)))
+  (flycheck-check-syntax-automatically (quote (save mode-enabled)))
   (flycheck-display-errors-delay 40)
   (flycheck-idle-change-delay 2))
-(setq-default flycheck-disabled-checkers '(javascript-jshint go-vet))
+(setq-default flycheck-disabled-checkers '(javascript-jshint go-megacheck))
 
 (use-package flycheck-pos-tip
   :config (flycheck-pos-tip-mode))
@@ -151,20 +163,10 @@
 (use-package json-mode
   :config (add-hook 'json-mode-hook (lambda () (setq-local js-indent-level 2))))
 
-(use-package nvm
-  :config (nvm-use (caar (last (nvm--installed-versions)))))
-
-(defun mjs/setup-local-eslint ()
-    "If ESLint found in node_modules directory - use that for flycheck.
-Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
-    (interactive)
-    (let ((local-eslint (expand-file-name "./node_modules/.bin/eslint")))
-      (defvar flycheck-javascript-eslint-executable)
-      (setq flycheck-javascript-eslint-executable
-            (and (file-exists-p local-eslint) local-eslint))))
-
 (use-package projectile
-  :hook (projectile-after-switch-project . mjs/setup-local-eslint)
+  :custom
+  (projectile-project-search-path '("~/dev/"))
+  (projectile-mode-line-prefix " Proj")
   :config (projectile-mode +1)
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)))
@@ -200,6 +202,21 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 
 (use-package expand-region
   :bind ("C-=" . er/expand-region))
+
+(use-package eyebrowse
+  :config (eyebrowse-mode t))
+
+(use-package nameframe
+  :after (eyebrowse)
+  :bind ("C-x f" . nameframe-switch-frame))
+
+(use-package nameframe-eyebrowse
+  :ensure nil
+  :config (nameframe-eyebrowse-mode t))
+
+(use-package nameframe-projectile
+  :after (projectile nameframe)
+  :config (nameframe-projectile-mode t))
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
@@ -265,8 +282,7 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
   :hook (before-save . gofmt-before-save)
   :hook (go-mode . (lambda ()
                      (setq tab-width 4)
-                     (setq indent-tabs-mode 1)
-                     (subword-mode +1)))
+                     (setq indent-tabs-mode 1)))
   :bind ("M-." . godef-jump))
 
 (use-package go-eldoc
@@ -281,9 +297,13 @@ Intended for use in PROJECTILE-AFTER-SWITCH-PROJECT-HOOK."
 (use-package go-projectile
   :after (go-mode projectile))
 
+(use-package kubernetes
+  :commands (kubernetes-overview))
+
 ;; packages with no further configuration
 (use-package arduino-mode)
 (use-package clojure-mode)
+(use-package docker-compose-mode)
 (use-package dockerfile-mode)
 (use-package gitignore-mode)
 (use-package glsl-mode)
@@ -334,63 +354,19 @@ Position the cursor at it's beginning, according to the current mode."
   (set-mark-command 1))
 (global-set-key (kbd "M-`") 'jump-to-mark)
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(backup-directory-alist (quote (("" . "~/.emacs.d/backup"))))
- '(default-frame-alist
-    (quote
-     ((tool-bar-lines . 0)
-      (menu-bar-lines . 1)
-      (foreground-color . "Black")
-      (background-color . "White")
-      (cursor-type . box)
-      (cursor-color . "Red")
-      (vertical-scroll-bars . right)
-      (internal-border-width . 0)
-      (left-fringe . 1)
-      (right-fringe)
-      (fringe))))
- '(kill-do-not-save-duplicates t)
- '(ns-tool-bar-display-mode (quote both) t)
- '(ns-tool-bar-size-mode nil t)
- '(package-selected-packages
-   (quote
-    (auto-highlight-symbol misc docker browse-kill-ring anzu avy paradox move-text flycheck-pos-tip smex yasnippet-snippets volatile-highlights duplicate-thing xref-js2 yaml-mode rust-mode nasm-mode markdown-mode jade-mode go-mode glsl-mode gitignore-mode dockerfile-mode clojure-mode arduino-mode syntactic-close prettier-js indium wrap-region rainbow-delimiters expand-region use-package tern-auto-complete smart-mode-line-powerline-theme rjsx-mode projectile nvm magit-gh-pulls json-mode js2-refactor flycheck exec-path-from-shell copy-as-format)))
- '(rm-blacklist
-   (quote
-    (" wr" " hl-p" " AC" " Spc" " yas" " js2r" " Tern" " js-interaction" " Prettier" " guru" " (*)" " Fly" " Anzu" " VHl" " ElDoc")))
- '(rm-text-properties
-   (quote
-    (("\\` Ovwrt\\'"
-      (quote face)
-      (quote font-lock-warning-face))
-     ("\\` FlyC:"
-      (quote face)
-      (quote font-lock-comment-face)))))
- '(sql-product (quote postgres))
- '(uniquify-buffer-name-style (quote post-forward) nil (uniquify))
- '(visual-line-mode nil t))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "White" :foreground "Black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 120 :width normal :foundry "nil" :family "Monaco"))))
- '(autoface-default ((t (:inherit default))))
- '(completion-list-mode-default ((t (:inherit autoface-default))) t)
- '(js-mode-default ((t (:inherit prog-mode-default :height 120 :family "Monaco"))) t)
- '(js2-mode-default ((t (:inherit js-mode-default))) t)
- '(magit-popup-mode-default ((t (:inherit autoface-default))) t)
- '(magit-process-mode-default ((t (:inherit magit-mode-default))) t)
- '(magit-status-mode-default ((t (:inherit magit-mode-default))) t)
- '(minibuffer-inactive-mode-default ((t (:inherit autoface-default))) t)
- '(minibuffer-prompt ((t (:foreground "medium blue" :family "Lucida Grande"))))
- '(mode-line ((t (:background "grey85" :foreground "black" :box (:line-width -1 :color "white") :family "Lucida Grande"))))
- '(mode-line-inactive ((t (:inherit mode-line :background "grey85" :foreground "grey20" :box (:line-width -2 :color "white") :slant normal))))
- '(org-mode-default ((t (:inherit autoface-default :stipple nil :strike-through nil :underline nil :slant normal :weight normal :height 120 :width normal :family "Monaco"))))
- '(sh-mode-default ((t (:inherit prog-mode-default))) t)
- '(text-mode-default ((t (:inherit autoface-default :stipple nil :strike-through nil :underline nil :slant normal :weight normal :height 130 :width normal :family "Lucida Grande"))))
- '(yaml-mode-default ((t (:inherit default))) t))
+;; Delete word rather than kill
+(defun delete-word (arg)
+  "Delete characters forward until encountering the end of a word."
+  (interactive "p")
+  (delete-region
+   (point)
+   (progn
+     (forward-word arg)
+     (point))))
+(global-set-key (kbd "M-d") 'delete-word)
+
+(defun backward-delete-word (arg)
+  "Delete characters backward until encountering the end of a word"
+  (interactive "p")
+  (delete-word (- arg)))
+(global-set-key (kbd "<M-backspace>") 'backward-delete-word)
