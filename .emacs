@@ -7,10 +7,11 @@
  gc-cons-threshold 20000000
  confirm-kill-emacs 'y-or-n-p
  create-lockfiles nil
- custom-file "~/.emacs.d/custom.el")
+ custom-file (expand-file-name "custom.el" user-emacs-directory))
 (setq-default indent-tabs-mode nil)
 (load custom-file)
-(add-to-list 'load-path "~/.emacs.d/site-lisp/")
+(add-to-list 'load-path (expand-file-name "site-lisp/" user-emacs-directory))
+(setenv "GOPATH" "/Users/danielle/dev/go")
 
 ;; Global modes
 (desktop-save-mode t)
@@ -21,6 +22,7 @@
 (show-paren-mode t)
 (delete-selection-mode 1)
 (put 'overwrite-mode 'disabled t)
+(winner-mode 1)
 
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 (add-to-list 'auto-mode-alist '("\\.html\\'" . html-mode))
@@ -78,6 +80,13 @@
 (use-package browse-kill-ring
   :bind ("C-M-y" . browse-kill-ring))
 
+(use-package isearch
+  :ensure nil
+  :config (define-key isearch-mode-map [remap isearch-delete-char] 'isearch-del-char))
+
+(use-package goto-line-preview
+  :bind ("M-g g" . goto-line-preview))
+
 (use-package misc
   :ensure nil
   :bind ("M-Z" . zap-up-to-char))
@@ -112,6 +121,7 @@
 (setq-default flycheck-disabled-checkers '(javascript-jshint go-megacheck))
 
 (use-package flycheck-pos-tip
+  :after flycheck
   :config (flycheck-pos-tip-mode))
 
 ;; Set up for React/JSX development
@@ -171,20 +181,24 @@
   :hook (after-save . magit-after-save-refresh-status)
   :hook (magit-mode . hl-line-mode)
   :config
-  (setq vc-handled-backends (delq 'Git vc-handled-backends))
   (remove-hook 'server-switch-hook 'magit-commit-diff)
   :custom
   (global-magit-file-mode t)
   (magit-branch-read-upstream-first 'fallback)
   (magit-commit-ask-to-stage nil)
   (magit-stage-all-confirm nil)
-  (magit-save-repository-buffers 'dontask))
+  (magit-save-repository-buffers 'dontask)
+  (magit-diff-refine-hunk t))
 
 (use-package magit-gh-pulls
   :hook (magit-mode . turn-on-magit-gh-pulls))
 
 (use-package magit-todos
   :hook (magit-mode . magit-todos-mode))
+
+(use-package diff-hl
+  :config (global-diff-hl-mode)
+  :hook (magit-post-refresh . diff-hl-magit-post-refresh))
 
 (use-package copy-as-format
   :bind (("C-c w s" . copy-as-format-slack)
@@ -209,9 +223,10 @@
   :ensure nil
   :config (nameframe-eyebrowse-mode t))
 
-(use-package nameframe-projectile
-  :after (projectile nameframe)
-  :config (nameframe-projectile-mode t))
+;;(use-package nameframe-projectile
+;;  :ensure t
+;;  :after (projectile nameframe)
+;;  :config (nameframe-projectile-mode t))
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
@@ -260,6 +275,13 @@
 (use-package move-text
   :config (move-text-default-bindings))
 
+(use-package origami
+  :bind (:map origami-mode-map
+              ("C-c s" . origami-open-all-nodes)
+              ("C-c C-s" . origami-show-only-node)
+              ("C-S-S" . origami-recursively-toggle-node))
+  :hook (prog-mode . origami-mode))
+
 (use-package avy
   :bind ("C-:" . avy-goto-char))
 
@@ -306,6 +328,8 @@
 (use-package markdown-mode)
 (use-package nasm-mode)
 (use-package python)
+(use-package pip-requirements)
+(use-package toml-mode)
 (use-package yaml-mode)
 
 ;; smart openline
@@ -361,7 +385,26 @@ Position the cursor at it's beginning, according to the current mode."
 (global-set-key (kbd "M-d") 'delete-word)
 
 (defun backward-delete-word (arg)
-  "Delete characters backward until encountering the end of a word"
+  "Delete characters backward until encountering the end of a word."
   (interactive "p")
   (delete-word (- arg)))
 (global-set-key (kbd "<M-backspace>") 'backward-delete-word)
+
+(defun double-frame-width ()
+  "Double the width of the current frame."
+  (interactive)
+  (set-frame-width (selected-frame) (* 2 (frame-width (selected-frame)))))
+(global-set-key (kbd "C-c f w") 'double-frame-width)
+
+(defun double-frame-height ()
+  "Double the height of the current frame."
+  (interactive)
+  (set-frame-height (selected-frame) (* 2 (frame-height (selected-frame)))))
+(global-set-key (kbd "C-c f h") 'double-frame-height)
+
+(defun reset-standard-frame-size ()
+  "Reset to the initial frame size."
+  (interactive)
+  (set-frame-height (selected-frame) 36)
+  (set-frame-width (selected-frame) 80))
+(global-set-key (kbd "C-c f r") 'reset-standard-frame-size)
