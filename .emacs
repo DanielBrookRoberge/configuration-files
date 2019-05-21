@@ -82,11 +82,7 @@
   :ensure nil
   :bind ("M-Z" . zap-up-to-char))
 
-(use-package paradox
-  :custom
-  (paradox-github-token ""))
-
-(use-package smart-mode-line-powerline-theme :ensure t)
+(use-package smart-mode-line-powerline-theme)
 (use-package smart-mode-line
   :config
   (setq sml/no-confirm-load-theme t)
@@ -117,7 +113,6 @@
 
 (use-package flycheck-pos-tip
   :config (flycheck-pos-tip-mode))
-
 
 ;; Set up for React/JSX development
 (use-package js2-mode
