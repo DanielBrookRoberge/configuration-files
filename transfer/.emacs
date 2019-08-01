@@ -191,7 +191,7 @@
   (flycheck-check-syntax-automatically (quote (save mode-enabled)))
   (flycheck-display-errors-delay 40)
   (flycheck-idle-change-delay 2)
-  (flycheck-python-pycompile-executable "/usr/local/bin/python3")
+  (flycheck-python-pycompile-executable "/usr/local/bin/python3"))
 (setq-default flycheck-disabled-checkers '(javascript-jshint go-megacheck))
 
 (use-package flycheck-pos-tip
